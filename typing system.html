@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* 視覺設計：黑底綠字 */
+        body { background-color: black; color: #33FF33; font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; font-size: 24px; }
+        #history { overflow-y: auto; flex-grow: 1; white-space: pre-wrap; }
+        #input-line { display: flex; }
+        #cursor { width: 10px; background-color: #33FF33; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        input { background: transparent; border: none; color: #33FF33; font-family: inherit; font-size: inherit; outline: none; flex-grow: 1; }
+    </style>
+</head>
+<body>
+    <div id="history">Welcome to System v1.0.8... Type "help" for commands.</div>
+    <div id="input-line">
+        <span>[User@Mind] $ &nbsp;</span>
+        <input type="text" id="terminal-input" autofocus>
+        <div id="cursor"></div>
+    </div>
+
+    <script>
+        let isWritingMode = false;
+        const input = document.getElementById('terminal-input');
+        const history = document.getElementById('history');
+
+        const lines = [
+            "Good morning, Chi-En",
+            "Welcome to System v1.0.8...",
+            "Initialize tasks for today?",
+            'Type "help" for commands.'
+        ];
+
+        function showLine(index) {
+            if (index < lines.length) {
+                // 在歷史紀錄中加入新的一行
+                history.innerHTML += `<div>${lines[index]}</div>`;
+                
+                // 設定「延遲」多久顯示下一行（這裡設定 1000 毫秒 = 1 秒）
+                setTimeout(() => {
+                    showLine(index + 1);
+                }, 2500); 
+                
+                // 確保畫面自動捲動到底部
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        }
+
+        window.onload = () => {
+            history.innerHTML = ""; // 先清空原本 HTML 裡的預設字
+            showLine(0);
+        };
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const cmd = input.value.trim();
+
+                // 判斷：如果現在是「寫信模式」
+                if (isWritingMode) {
+                    
+                    // 如果輸入 finish，就關掉模式
+                    if (cmd === "send") {
+                        history.innerHTML += `<div style="color: yellow; margin-top: 10px;">Sending email...</div>`;
+
+                        setTimeout(() => {
+                            history.innerHTML += `<div style="color: yellow;">Email sent.</div>`;
+
+                            setTimeout(() => {
+                                isWritingMode = false; 
+                                history.innerHTML += `<div style="color: #33FF33; margin-top: 5px;">-- Writing mode ended. System restored. --</div>`;
+                            }, 800);
+                        }, 1000);
+                    } 
+                    // 否則，無論打什麼都只是顯示出來，不回覆
+                    else {
+                        history.innerHTML += `<div style="font-style: italic; padding-left: 10px;">${cmd}</div>`;
+                    }
+
+                } else {
+
+                    if (cmd.toLowerCase().includes("next task")) {
+                        const randomPercent = Math.floor(Math.random() * 15) + 1;
+                    
+                    // 1. 先顯示使用者的輸入
+                    history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                    
+                    // 2. 建立一個新的 div 元素
+                    const loadingRow = document.createElement('div');
+                    loadingRow.innerHTML = `System: Loading productivity... `;
+                    history.appendChild(loadingRow); // 把這一行塞進 history
+                    
+                    scrollToBottom();
+
+                    // 3. 設定定時器補上數字
+                    setTimeout(() => {
+                        // 直接操作剛才建立的那個 loadingRow 變數
+                        const percentSpan = document.createElement('span');
+                        percentSpan.style.color = "white";
+                        percentSpan.innerText = `${randomPercent}%`;
+                        
+                        loadingRow.appendChild(percentSpan);
+                        
+                        // **關鍵：補上數字後要再捲動一次，不然會看不到**
+                        scrollToBottom(); 
+                    }, 600);
+                }
+                    
+                    // 2. 處理深度懷疑 (沉默 3 秒)
+                    else if (cmd.toLowerCase() === "am i doing enough?") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        // 這裡我們暫時不讓它立刻回覆，製造沉默
+                        setTimeout(() => {
+                            history.innerHTML += `<div style="color: #FF3333; font-weight: bold;">[System Warning]: Output insufficient.</div>`;
+                            scrollToBottom();
+                        }, 3000);
+                    }
+
+                    // 3. 進入寫信模式的指令
+                    else if (cmd.toLowerCase() === "write an email") {
+                        isWritingMode = true;
+                        history.innerHTML += `<div style="color: yellow; margin-top: 10px;">-- Entering writing mode. (Type "send" to finish) --</div>`;
+                    }
+
+                    // 4. 其他一般指令 (help, clear...)
+                    else if (cmd.toLowerCase() === "help") {
+                        history.innerHTML += `<div>Available: [write an email, clear, help]</div>`;
+                    } else {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        history.innerHTML += `<div>System: Data logged.</div>`;
+                    }
+                }
+
+                input.value = "";
+                scrollToBottom();
+            }
+
+            function scrollToBottom() {
+                // 讓 history 容器捲動到最底部
+                history.scrollTop = history.scrollHeight;
+                // 同時讓視窗也捲動到最底部（雙重保險）
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        });
+
+    </script>
+</body>
+</html>
