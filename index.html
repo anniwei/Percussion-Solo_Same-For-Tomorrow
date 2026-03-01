@@ -20,7 +20,9 @@
     </div>
 
     <script>
+        let hasStarted = false;
         let isWritingMode = false;
+        let chapter = 1; // 預設是第一樂章
         const input = document.getElementById('terminal-input');
         const history = document.getElementById('history');
 
@@ -31,117 +33,191 @@
             'Type "help" for commands.'
         ];
 
+        function scrollToBottom() {
+            history.scrollTop = history.scrollHeight;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
         function showLine(index) {
             if (index < lines.length) {
-                // 在歷史紀錄中加入新的一行
                 history.innerHTML += `<div>${lines[index]}</div>`;
-                
-                // 設定「延遲」多久顯示下一行（這裡設定 1000 毫秒 = 1 秒）
                 setTimeout(() => {
                     showLine(index + 1);
                 }, 2500); 
-                
-                // 確保畫面自動捲動到底部
-                window.scrollTo(0, document.body.scrollHeight);
+                scrollToBottom();
             }
         }
 
         window.onload = () => {
-            history.innerHTML = ""; // 先清空原本 HTML 裡的預設字
-            showLine(0);
-        };
+            history.innerHTML = "<div>[System Standby] Press Enter to initialize...</div>";
+        }
 
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const cmd = input.value.trim();
+                const lowerCmd = cmd.toLowerCase().replace(/\?/g, "");
 
-                // 判斷：如果現在是「寫信模式」
+                // ** 階段 0：初始化啟動 **
+                if (!hasStarted) {
+                    history.innerHTML = ""; 
+                    showLine(0);
+                    hasStarted = true;
+                    input.value = "";
+                    return;
+                }
+
+                // ** 階段 1：寫信模式 **
                 if (isWritingMode) {
-                    
-                    // 如果輸入 finish，就關掉模式
-                    if (cmd === "send") {
+                    if (lowerCmd === "send") {
                         history.innerHTML += `<div style="color: yellow; margin-top: 10px;">Sending email...</div>`;
-
                         setTimeout(() => {
                             history.innerHTML += `<div style="color: yellow;">Email sent.</div>`;
-
                             setTimeout(() => {
                                 isWritingMode = false; 
                                 history.innerHTML += `<div style="color: #33FF33; margin-top: 5px;">-- Writing mode ended. System restored. --</div>`;
+                                chapter = 2; // 自動切換到第二樂章預備狀態
+                                scrollToBottom();
                             }, 800);
                         }, 1000);
-                    } 
-                    // 否則，無論打什麼都只是顯示出來，不回覆
-                    else {
+                    } else {
                         history.innerHTML += `<div style="font-style: italic; padding-left: 10px;">${cmd}</div>`;
+                        scrollToBottom();
                     }
 
-                } else {
+                    input.value = ""; // 清空輸入框
+                    return; // 重要！加上這一行，就不會跑出後面的 Data logged 了
+                } 
 
-                    if (cmd.toLowerCase().includes("next task")) {
-                        const randomPercent = Math.floor(Math.random() * 15) + 1;
-                    
-                    // 1. 先顯示使用者的輸入
-                    history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
-                    
-                    // 2. 建立一個新的 div 元素
-                    const loadingRow = document.createElement('div');
-                    loadingRow.innerHTML = `System: Loading productivity... `;
-                    history.appendChild(loadingRow); // 把這一行塞進 history
-                    
-                    scrollToBottom();
-
-                    // 3. 設定定時器補上數字
+                // --- 第二樂章的特殊觸發 ---
+                // 假設你在演出中手動切換了 chapter = 2 (或輸入特定指令切換)
+                if (chapter === 2 && cmd === "") {
+                    history.innerHTML += `<div style="margin-top: 15px;">System:</div>`;
                     setTimeout(() => {
-                        // 直接操作剛才建立的那個 loadingRow 變數
-                        const percentSpan = document.createElement('span');
-                        percentSpan.style.color = "white";
-                        percentSpan.innerText = `${randomPercent}%`;
-                        
-                        loadingRow.appendChild(percentSpan);
-                        
-                        // **關鍵：補上數字後要再捲動一次，不然會看不到**
-                        scrollToBottom(); 
-                    }, 600);
-                }
-                    
-                    // 2. 處理深度懷疑 (沉默 3 秒)
-                    else if (cmd.toLowerCase() === "am i doing enough?") {
-                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
-                        // 這裡我們暫時不讓它立刻回覆，製造沉默
+                        history.innerHTML += `<div>Welcome back.</div>`;
+                        scrollToBottom();
                         setTimeout(() => {
-                            history.innerHTML += `<div style="color: #FF3333; font-weight: bold;">[System Warning]: Output insufficient.</div>`;
+                            history.innerHTML += `<div>It is now 2:30 PM.</div>`;
+                            scrollToBottom();
+                            setTimeout(() => {
+                                history.innerHTML += `<div>You have 67% of the day remaining.</div>`;
+                                scrollToBottom();
+                            }, 1200);
+                        }, 1200);
+                    }, 500);
+                    input.value = "";
+                    return; // 執行完就結束，不跑後面的指令
+                }
+
+                // ** 階段 2：一般模式 (特殊指令優先) **
+                else {
+                    const lowerCmd = cmd.toLowerCase().replace(/\?/g, "");
+
+                    // 1. how was it & really
+                    if (lowerCmd === "how was it" || lowerCmd === "really") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        scrollToBottom();
+
+                        setTimeout(() => {
+                            const loadingRow = document.createElement('div');
+                            // 這裡加個小細節：如果是 really，字樣會稍微不同
+                            const statusText = (lowerCmd === "really") ? "Re-evaluating" : "Evaluating";
+                            loadingRow.innerHTML = `System: ${statusText} perfection... `;
+                            history.appendChild(loadingRow);
+                            scrollToBottom();
+
+                            setTimeout(() => {
+                                const randomPercent = Math.floor(Math.random() * 26) + 60;
+                                const percentSpan = document.createElement('span');
+                                percentSpan.style.color = "white";
+                                percentSpan.innerText = `${randomPercent}%`;
+                                
+                                loadingRow.appendChild(percentSpan);
+                                scrollToBottom(); 
+                            }, 600);
+                        }, 500);
+                    } 
+
+                    // 2. Just arrived
+                    else if (lowerCmd === "just arrived practice room") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        scrollToBottom();
+                        setTimeout(() => {
+                            history.innerHTML += `<div>Logged in at 8:04 AM</div>`;
+                            scrollToBottom();
+                            setTimeout(() => {
+                                history.innerHTML += `<div>Today’s outlook: 14 hours of potential productivity</div>`;
+                                scrollToBottom();
+                                setTimeout(() => {
+                                    history.innerHTML += `<div style="color: #33FF33; font-weight: bold;">Ready to practice?</div>`;
+                                    scrollToBottom();
+                                }, 1200);
+                            }, 1200);
+                        }, 1000);
+                    }
+
+                    // 3. start practice (yes)
+                    else if (lowerCmd === "yes") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        scrollToBottom();
+                        setTimeout(() => {
+                            history.innerHTML += `<div>Please set the metronome to 88</div>`;
+                            scrollToBottom();
+                            setTimeout(() => {
+                                history.innerHTML += `<div>Have a good practice time</div>`;
+                                scrollToBottom();
+                            }, 1200);
+                        }, 1200);
+                    }
+
+                    // 4. Good enough for the lesson this week (注意：因為拔掉了問號，這裡比對不加問號)
+                    else if (lowerCmd === "good enough for the lesson this week") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        setTimeout(() => {
+                            history.innerHTML += `<div style="color: #FF3333; font-weight: bold;">[System Warning]: Insuf cient for target goals.</div>`;
                             scrollToBottom();
                         }, 3000);
                     }
 
-                    // 3. 進入寫信模式的指令
-                    else if (cmd.toLowerCase() === "write an email") {
+                    // 5. Write an email
+                    else if (lowerCmd === "write an email") {
                         isWritingMode = true;
                         history.innerHTML += `<div style="color: yellow; margin-top: 10px;">-- Entering writing mode. (Type "send" to finish) --</div>`;
                     }
 
-                    // 4. 其他一般指令 (help, clear...)
-                    else if (cmd.toLowerCase() === "help") {
-                        history.innerHTML += `<div>Available: [write an email, clear, help]</div>`;
-                    } else {
+                    // 6. Help
+                    else if (lowerCmd === "help") {
+                        history.innerHTML += `<div>Available: [just arrived practice room, how was it, am i doing enough, write an email, help]</div>`;
+                    }
+
+                    // 7. lost track of time
+                    else if (lowerCmd === "lost track of time") {
                         history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
-                        history.innerHTML += `<div>System: Data logged.</div>`;
+                        scrollToBottom();
+                        setTimeout(() => {
+                            history.innerHTML += `<div>Idle period detected: 15 minutes.</div>`;
+                            scrollToBottom();
+                            setTimeout(() => {
+                                history.innerHTML += `<div>Resuming task list...</div>`;
+                                scrollToBottom();
+                            }, 2000);
+                        }, 2000);
+                    }
+
+                    // 7. 最後保底：Data Logged
+                    else if (cmd !== "") {
+                        history.innerHTML += `<div>[User@Mind] $ ${cmd}</div>`;
+                        scrollToBottom();
+                        setTimeout(() => {
+                            history.innerHTML += `<div>System: Data logged.</div>`;
+                            scrollToBottom();
+                        }, 1000);
                     }
                 }
 
                 input.value = "";
                 scrollToBottom();
             }
-
-            function scrollToBottom() {
-                // 讓 history 容器捲動到最底部
-                history.scrollTop = history.scrollHeight;
-                // 同時讓視窗也捲動到最底部（雙重保險）
-                window.scrollTo(0, document.body.scrollHeight);
-            }
         });
-
     </script>
 </body>
 </html>
